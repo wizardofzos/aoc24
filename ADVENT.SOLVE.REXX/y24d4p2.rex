@@ -20,6 +20,7 @@ file.0 = 10 */
 
 map. = '0'
 
+part1 = 0
 part2 = 0
 
 /* Build our map.. */
@@ -33,11 +34,53 @@ end
 
 do l = 1 to file.0
   do p = 1 to length(file.1)
-    /* check for pattern 1 */
     p1 = p + 1
     p2 = p + 2
+    p3 = p + 3
     l1 = l + 1
     l2 = l + 2
+    l3 = l + 3
+    /* check for left to right */
+    if map.l.p = "X" & map.l.p1 = "M" & map.l.p2 = "A" & map.l.p3 = "S"
+    then do
+      part1 = part1 + 1
+    end
+    /* check for right to left */
+    if map.l.p = "S" & map.l.p1 = "A" & map.l.p2 = "M" & map.l.p3 = "X"
+    then do
+      part1 = part1 + 1
+    end
+    /* check for up to down */
+    if map.l.p = "X" & map.l1.p = "M" & map.l2.p = "A" & map.l3.p = "S"
+    then do
+      part1 = part1 + 1
+    end
+    /* check for down to up */
+    if map.l.p = "S" & map.l1.p = "A" & map.l2.p = "M" & map.l3.p = "X"
+    then do
+      part1 = part1 + 1
+    end
+    /* check for diagonal right and down */
+    if map.l.p="X" & map.l1.p1="M" & map.l2.p2="A" & map.l3.p3="S"
+    then do
+      part1 = part1 + 1
+    end
+    /* check for diagonal left and up    */
+    if map.l.p="S" & map.l1.p1="A" & map.l2.p2="M" & map.l3.p3="X"
+    then do
+      part1 = part1 + 1
+    end
+    /* check for diagonal right and up */
+    if map.l3.p="S" & map.l2.p1="A" & map.l1.p2="M" & map.l.p3="X"
+    then do
+      part1 = part1 + 1
+    end
+    /* check for diagonal right and up */
+    if map.l3.p="X" & map.l2.p1="M" & map.l1.p2="A" & map.l.p3="S"
+    then do
+      part1 = part1 + 1
+    end
+    /* check for pattern 1 */
     if map.l.p = "M" & map.l.p2 = "S" &,
        map.l1.p1 = "A" &,
        map.l2.p = "M" & map.l2.p2 = "S" then
@@ -68,4 +111,5 @@ do l = 1 to file.0
   end
 end
 
+say "Part one:" part1
 say "Part two:" part2
