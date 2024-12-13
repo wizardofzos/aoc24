@@ -96,9 +96,10 @@ do i = 1 to words(allplants)
         nc = c + dc
         nl = l + dl
         /* is this connected ? */
-        do q = 1 to plant.p.0
-          if plant.p.q = nc","nl then do
+        if wordpos(nc","nl, locations.p) > 0 then do
             if checked.nc.nl = 0 then do
+              say "quueue from concheck"
+              checked.nc.nl = 1
               x = queueit(nc,nl)
             end
             conns = conns - 1
@@ -107,8 +108,6 @@ do i = 1 to words(allplants)
       end
       /* all potential connected processed */
       say "plant" p "at" plant.p.l "has" conns "unconnected plants"
-      parse var plant.p.l f","g
-      checked.f.g = 1
     end
   end
 end
@@ -139,6 +138,7 @@ firstqueue: procedure expose queue. checked.
   end
   /* Minus one on the index */
   queue.0 = queue.0 - 1
+  /* mark as checked */
   /* return it */
   return c","l
 
