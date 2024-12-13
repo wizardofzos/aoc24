@@ -61,31 +61,47 @@ do i = 1 to file.0
   end
 end
 
+db = debuglocations()
 
 ll = TIME()
 say ll "Done parsing map," plant.0" plants found"
 do i = 1 to words(allplants)
   p = word(allplants,i)
+  plant.p.conns = 0
+  region.p.0 = 0
   say "  plant: "p"  amount:"plant.p.0
+  perim = 0
+  ar = 0
+  price = 0
   /* Now we have all the locations for this plant */
   /* Find all 'connected sets' for each plant count
      the amount of other plants around it (lrud) */
-  do l = 1 to plant.p.0
+  checked. = ''
+  do m = 1 to plant.p.0
     queue.0 = 0
-    coord = plant.p.l
+    coord = plant.p.m
+    coord2 = word(locations.p,m)
+    say locations.p
+    if coord = 0 then do
+     /* Something bad happened */
+     coord = coord2
+    end
     parse var coord c","l
     x = queueit(c,l)
+    area = 0
+    perimeter = 0
+    isolated = 1
     /* Queue Debug */
     do while queue.0 > 0
       /* get first from queue */
-      nl = firstqueue()
-      parse var nl c","l
+      newloc = firstqueue()
+      parse var newloc c","l
       /* Did we do this one yet? */
       if checked.c.l = 1 then do
-        say "We already did" c","l
-        iterate
+        leave
       end
       checked.c.l = 1
+      area = area + 1
       /* check for number of unconnected sides */
       conns = 4
       deltas = "0,1 0,-1 1,0 -1,0"
@@ -97,19 +113,22 @@ do i = 1 to words(allplants)
         nl = l + dl
         /* is this connected ? */
         if wordpos(nc","nl, locations.p) > 0 then do
+            isolated = 0
             if checked.nc.nl = 0 then do
-              say "quueue from concheck"
               checked.nc.nl = 1
               x = queueit(nc,nl)
             end
             conns = conns - 1
-          end
         end
       end
-      /* all potential connected processed */
-      say "plant" p "at" plant.p.l "has" conns "unconnected plants"
+      perimeter = perimeter + conns
     end
-  end
+    if isolated = 1 then do
+      area = 1
+      perimeter = 4
+      checked.c.l = 1
+    end
+    say "plant" p "area="area "perimeter="perimeter
 end
 
 exit
@@ -117,9 +136,9 @@ exit
 queueit: procedure expose queue. checked.
   parse arg c,l
   if checked.c.l = 1 then do
-    say "Cannot queue this("c","l") we've done it"
     return 0
   end
+  say "queueing" c","l
   nq = queue.0 + 1
   queue.nq.0 = c
   queue.nq.1 = l
@@ -142,3 +161,14 @@ firstqueue: procedure expose queue. checked.
   /* return it */
   return c","l
 
+debuglocations: procedure expose locations. allplants
+  do i = 1 to words(allplants)
+    pid = word(allplants,i)
+    say pid ">" locations.pid
+  end
+  return 0
+
+debugqueue: procedure expose queue.
+  do i = 1 to queue.0
+    say i")" queue.i.0 queue.i.1
+  end
