@@ -5,170 +5,152 @@
 say "Advent of Code 2024 day 12"
 x = bpxwunix('cat /prj/repos/ZAOC/puzzles/y2024d12',,file.,se.)
 
-/* Smallest Test Data */
+/* test */
+
+/* Smallest Test Data
 file.1 = 'OOOOO'
 file.2 = 'OXOXO'
 file.3 = 'OOOOO'
 file.4 = 'OXOXO'
 file.5 = 'OOOOO'
-file.0 = 5
-
+file.0 = 5 */
 
 map. = '' /* The Map of c.l plotID's */
 
-/* keep track of all plantTypes */
+/* Keep track of all plantTypes */
 allplants = ''
-/* and all regions */
-allregions = ''
+locations. = '' /* Store plant locations by plantID */
+checked. = '' /* Tracks checked locations */
+queue. = '' /* BFS queue */
 
-/* Keep track of plants plant.A is amoutn of plants A
-                        amoutn of total plants = plant.0
-*/
-plant. = ''
-plant.0 = 0
-/* Keep track of all locations per plantID */
-/* locations.A = ".,. .,. .,." (column,row)*/
-locations. = ''
-/* And of stuff we've checked/parsed/processed */
-checked. = 0
-
-/* Our queue for bfs */
-queue. = 0
-
-
-say TIME() "starting file proces and mapbuilding"
+/* Build the map */
+say TIME() "Starting file processing and map building..."
 do i = 1 to file.0
   do j = 1 to length(file.i)
-    map.j.i = substr(file.i,j,1)
-    plantid = map.j.i
-    if wordpos(plantid,allplants) = 0 then do
-      /* this plant not known yet */
-      plant.plantid = plantid
-      plant.plantid.0 = 1
-      plant.plantid.1 = j","i
+    plantid = substr(file.i, j, 1)
+    map.j.i = plantid
+
+    if wordpos(plantid, allplants) = 0 then do
+      /* New plant type */
       allplants = allplants plantid
-      say "new plant" plantid
+      locations.plantid = j","i
     end
-    else do
-      /* We already know this plant, add one to amount */
-      /* And add to plant count too */
-      np = plant.plantid.0 + 1
-      plant.plantid.np = j","i
-      plant.plantid.0 = np
-    end
-    plant.0 = plant.0 + 1 /* we have one more plant */
-    locations.plantid = locations.plantid j","i
+    else
+      locations.plantid = locations.plantid || " " || j","i
   end
 end
 
-db = debuglocations()
+/*
+call debuglocations
+*/
+say TIME() "Done parsing map."
 
-ll = TIME()
-say ll "Done parsing map," plant.0" plants found"
+part1 = 0
+
+/* Process each plant type */
 do i = 1 to words(allplants)
-  p = word(allplants,i)
-  plant.p.conns = 0
-  region.p.0 = 0
-  say "  plant: "p"  amount:"plant.p.0
-  perim = 0
-  ar = 0
-  price = 0
-  /* Now we have all the locations for this plant */
-  /* Find all 'connected sets' for each plant count
-     the amount of other plants around it (lrud) */
-  checked. = ''
-  do m = 1 to plant.p.0
+  plantid = word(allplants, i)
+  totalArea = 0
+  totalPerimeter = 0
+  checked. = '' /* Reset checked map for each plant */
+
+  say "Processing plant:" plantid
+  region.plantid.0 = 0
+  do j = 1 to words(locations.plantid)
+    coord = word(locations.plantid, j)
+    parse var coord c "," l
+    /* Skip if already checked */
+    if checked.c.l = 1 then iterate
+
+    npr = region.plantid.0 + 1
+    region.plantid.npr.0 = 0           /* store perimeter */
+    region.plantid.npr.1 = 0          /* store area */
+    regionArea = 0
+    regionPerimeter = 0
+
+    /* Start BFS for this region */
     queue.0 = 0
-    coord = plant.p.m
-    coord2 = word(locations.p,m)
-    say locations.p
-    if coord = 0 then do
-     /* Something bad happened */
-     coord = coord2
-    end
-    parse var coord c","l
-    x = queueit(c,l)
-    area = 0
-    perimeter = 0
-    isolated = 1
-    /* Queue Debug */
+    x = queueit(c, l)
+
     do while queue.0 > 0
-      /* get first from queue */
+      /* during this loop, we're a connected set */
       newloc = firstqueue()
-      parse var newloc c","l
-      /* Did we do this one yet? */
-      if checked.c.l = 1 then do
-        leave
-      end
-      checked.c.l = 1
-      area = area + 1
-      /* check for number of unconnected sides */
+      parse var newloc c "," l
+      /* Skip if already checked */
+      if checked.c.l = 1 then iterate
+      checked.c.l = 1 /* log we've done this one */
+      /* Increment area */
+      regionArea = regionArea + 1
+      /* Check connections */
       conns = 4
       deltas = "0,1 0,-1 1,0 -1,0"
       do d = 1 to words(deltas)
-        /* check all potential connected plots */
-        con = word(deltas,d)
-        parse var con dc","dl
+        con = word(deltas, d)
+        parse var con dc "," dl
         nc = c + dc
         nl = l + dl
-        /* is this connected ? */
-        if wordpos(nc","nl, locations.p) > 0 then do
-            isolated = 0
-            if checked.nc.nl = 0 then do
-              checked.nc.nl = 1
-              x = queueit(nc,nl)
-            end
-            conns = conns - 1
+        /* Check neighbor */
+        if isNeighbor(nc, nl, plantid) then do
+          if checked.nc.nl <> 1 then do
+            x = queueit(nc, nl) /* Enqueue the neighbor */
+          end
+          conns = conns - 1
         end
       end
-      perimeter = perimeter + conns
+      regionPerimeter = regionPerimeter + conns
     end
-    if isolated = 1 then do
-      area = 1
-      perimeter = 4
-      checked.c.l = 1
+    if regionArea > 0 then do
+      say "Comp region:" np "Area=" regionArea "Perimeter=" regionPerimeter
+      part1 = part1 + (regionArea*regionPerimeter)
     end
-    say "plant" p "area="area "perimeter="perimeter
+  end
+
+    /* Accumulate totals */
+    totalArea = totalArea + regionArea
+    totalPerimeter = totalPerimeter + regionPerimeter
+
+  /* Output totals for the plant */
+  say "Plant" plantid ": Total A=" totalArea ", Total P=" totalPerimeter
 end
 
+say "Part One:" part1
 exit
 
+/* Queue functions */
 queueit: procedure expose queue. checked.
-  parse arg c,l
-  if checked.c.l = 1 then do
-    return 0
-  end
-  say "queueing" c","l
+  parse arg c, l
+  if checked.c.l = 1 then return 0
   nq = queue.0 + 1
   queue.nq.0 = c
   queue.nq.1 = l
   queue.0 = nq
   return 0
 
-firstqueue: procedure expose queue. checked.
-  /* Get first element from queue (oldest) */
+firstqueue: procedure expose queue.
   c = queue.1.0
   l = queue.1.1
-  /* Move all other elements 'to the left' */
   do i = 1 to queue.0 - 1
     nq = i + 1
     queue.i.0 = queue.nq.0
     queue.i.1 = queue.nq.1
   end
-  /* Minus one on the index */
   queue.0 = queue.0 - 1
-  /* mark as checked */
-  /* return it */
-  return c","l
+  return c "," l
+
+isNeighbor: procedure expose locations.
+  parse arg nc, nl, plantid
+  if wordpos(nc","nl, locations.plantid) > 0 then return 1
+  return 0
 
 debuglocations: procedure expose locations. allplants
   do i = 1 to words(allplants)
-    pid = word(allplants,i)
+    pid = word(allplants, i)
     say pid ">" locations.pid
   end
   return 0
 
 debugqueue: procedure expose queue.
   do i = 1 to queue.0
-    say i")" queue.i.0 queue.i.1
+    say i")" queue.i.0 "," queue.i.1
   end
+  return 0
